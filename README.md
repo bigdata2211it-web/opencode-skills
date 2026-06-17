@@ -1,4 +1,4 @@
-# opencode-skills → ai-cli-skills
+# ai-vault-skills
 
 Collection of AI agent skills/instructions, packaged for **multiple CLI/IDE tools**:
 opencode, Claude Code, Cursor, Codex CLI, and Cline. Same content, different wrappers.
@@ -30,7 +30,7 @@ cp -r opencode/mybd-cryfs ~/.config/opencode/skills/
 ```
 Restart opencode. Or register the repo as a skill source:
 ```json
-{ "skills": { "urls": ["https://github.com/bigdata2211it-web/opencode-skills"] } }
+{ "skills": { "urls": ["https://github.com/bigdata2211it-web/ai-vault-skills"] } }
 ```
 
 ### Claude Code
