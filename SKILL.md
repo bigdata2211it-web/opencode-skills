@@ -291,37 +291,65 @@ Without a backup:
 
 The vault is **fully portable** and independent of the OS install. The cipher
 backend is just a directory of encrypted blocks — nothing in it depends on the
-host system, user ID, distro, or `/home`.
+host system, user ID, distro, or `/home`. Two things are required to recover
+access on any new system: **the cipher backend dir** and **the password**.
 
-If you reinstall Linux, switch distros, or move to a new machine:
+### Recommendation: keep the backend on a NON-SYSTEM disk
 
-1. Keep the backend dir on a **separate disk/partition** from the OS (so
-   reinstalling the system never touches it). Example layout on this host:
+If you have more than one disk/partition, put the backend on a **data disk**
+that is separate from the OS (`/`) and from `/home`. Then reinstalling or
+replacing the OS never touches the vault.
 
-   | Mount | Device | FS | Role |
-   |-------|--------|----|------|
-   | `/` (system) | `/dev/sda1` | ext4/btrfs | OS, `/home`, packages |
-   | `/media/den/D` | `/dev/sdb1` | btrfs | data disk, holds `.MYBD.cryfs` |
+Example layout (paths are illustrative — pick your own):
 
-2. On the new system install cryfs and remount:
+| Mount | Device | FS | Role |
+|-------|--------|----|------|
+| `/` (system) | `/dev/sda1` | ext4/btrfs | OS, `/home`, packages — wipeable |
+| `/media/USER/DATA` | `/dev/sdb1` | btrfs | data disk, holds `<vault>.cryfs` |
 
-   ```bash
-   sudo apt install cryfs              # or dnf/pacman/brew/etc.
-   mkdir -p /media/den/D/data/MYBD     # empty mountpoint on the new system
-   cryfs /media/den/D/data/.MYBD.cryfs /media/den/D/data/MYBD
-   # enter the SAME password → all files are back
-   ```
+Corresponding paths (replace `USER`, `DATA`, `vault` with your own):
 
-3. Only two things are required to recover access: **the cipher backend**
-   (the `.MYBD.cryfs` dir on disk D) and **the password**. Nothing else.
+| Role | Path (example) |
+|------|----------------|
+| Cipher backend (on data disk) | `/media/USER/DATA/.vault.cryfs` |
+| Mountpoint (anywhere, e.g. same data disk) | `/media/USER/DATA/vault` |
 
-Practical rules:
-- The disk that holds `.MYBD.cryfs` is itself the backup as long as it is not
-  reformatted, repartitioned, or physically failed. A separate external/cloud
-  backup is still recommended (the backend is already encrypted — copy it
-  anywhere) but is optional if the data disk is left untouched.
-- Never point `mybd-open` at a backend inside `/` or `/home` if you plan to
-  reinstall the OS — it would be wiped along with the system.
+On a fresh system, recover access:
+
+```bash
+sudo apt install cryfs                       # or dnf/pacman/brew/etc.
+mkdir -p /media/USER/DATA/vault              # empty mountpoint on the new system
+cryfs /media/USER/DATA/.vault.cryfs /media/USER/DATA/vault
+# enter the SAME password → all files are back
+```
+
+### If you only have ONE disk
+
+If there is no separate data disk, the vault can still live on the same disk
+as the OS — but **this is risky**:
+
+- Reinstalling the OS, reformatting `/`, or deleting `/home` **will wipe the
+  vault** unless you move the backend off-disk first.
+- A single disk has a single point of failure: if that disk dies, both the
+  system and the vault are lost together.
+
+Mitigations when you cannot use a separate disk:
+- Put the backend under a path you will remember to back up before any OS
+  reinstall, e.g. `/home/USER/.vault/vault.cryfs`, and **copy it to external
+  media before reinstalling** (the backend is already encrypted — copy it as
+  raw files, no password needed to back it up).
+- Keep an external/cloud backup of the backend dir. The backup does not need
+  to be on a mounted disk; any copy of the encrypted blocks is sufficient.
+
+### General rules
+
+- The disk/partition that holds the backend is itself a backup as long as it
+  is not reformatted, repartitioned, or physically failed. An external/cloud
+  backup of the backend is still recommended, but is optional if the data
+  disk is left untouched.
+- Never point `mybd-open` at a backend inside a path you plan to wipe with the
+  OS (e.g. under `/` on a system you will reinstall) — move it to a data disk
+  or to external media first.
 - The wrapper scripts in `~/.local/bin` are not part of the vault; they are
   trivially reproducible from this SKILL.md on any new system.
 
